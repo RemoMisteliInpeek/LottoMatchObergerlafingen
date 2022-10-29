@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="lotto.css">
+    <title>Lotto</title>
+</head>
+
+<body id="demo">
+    <div id="uploade">
+        <form id="myForm">
+            <input type="file" id="csvFile" accept=".csv" />
+            <br>
+            <input type="submit" value="Submit" />
+        </form>
+    </div>
+
+    <div id="titel"></div>
+    <div id="test"><div id="numberSide"></div>
+    <div id="gangSide"></div></div>
+    
+</body>
+<script>
+/*
+gangNr,preisNr,text,typ
+1,1,200 Fr,normal
+
+gangNr=> nummer vom Gan
+preisNr=> ist es der 1 2 3 Preis
+text=> was angezeigt wird zu gewinne
+typ=> welche art gang es ist (pause,normal,super,superpause)
+
+*/
+    const myForm = document.getElementById("myForm");
+    const csvFile = document.getElementById("csvFile");
+    var numberDisplayedString = "00";
+    var gangNr = 1
+    var gange;
+
+    function updateTitel(variant = "normal") {
+        var titel = document.getElementById("titel");
+        titel.innerHTML = ''
+
+
+        var titelhtml = "";
+        if (variant === "normal") {
+            titelhtml = "<h1>Gang " + gangNr + "</h1>"
+        } else if (variant === "pause") {
+            titelhtml = "<h1>Gang " + gangNr + "</h1><p class='pause'>anschliesend 10 minuten Pause</p>"
+
+        } else if (variant === "super") {
+            titelhtml = "<h1>Supper Lotto Gang " + gangNr + "</h1>"
+
+        }else if (variant === "superpause") {
+            titelhtml = "<h1>Supper Lotto Gang " + gangNr + "</h1><p class='pause'>anschliesend 10 minuten Pause</p>"
+
+        }
+         else if (variant === "finished") {
+            titelhtml = "<h1>Danke fürs Spielen</h1>"
+
+        }
+
+        titel.innerHTML = titelhtml;
+    }
+
+    function stringToArray(str) {
+
+        arr = str.split('\n');
+
+        var jsonObj = [];
+        var headers = arr[0].split(',');
+        for (var i = 1; i < arr.length; i++) {
+            var data = arr[i].split(',');
+            var obj = {};
+            for (var j = 0; j < data.length; j++) {
+                obj[headers[j].trim()] = data[j].trim();
+            }
+            jsonObj.push(obj);
+        }
+        JSON.stringify(jsonObj);
+
+        var newJsonObj = [];
+
+        var groupBy = function (xs, key) {
+            return xs.reduce(function (rv, x) {
+                (rv[x[key]] = rv[x[key]] || []).push(x);
+                return rv;
+            }, {});
+        };
+        var groubetGang = groupBy(jsonObj, 'gangNr')
+
+
+        gange = groubetGang;
+        updateTitel();
+        displayGang(gangNr)
+        //  return jsonObj;
+    }
+    myForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const input = csvFile.files[0];
+        const reader = new FileReader();
+
+        var test;
+        reader.onload = function (e) {
+            const text = e.target.result;
+            stringToArray(text)// this variable isent set corectly yet
+
+        };
+        reader.readAsText(input);
+        document.getElementById("uploade").style = "display:none"
+
+
+    });
+
+    function displayGang(ganNrTodisplay) {
+
+        var gangSide = document.getElementById("gangSide");
+        gangSide.innerHTML = ''
+        if (gange[ganNrTodisplay] !== undefined) {
+            var priceListHtmal = "";
+            gange[ganNrTodisplay].forEach(element => {
+                priceListHtmal += createGagPriceHtmlString(element);
+            });
+            gangSide.innerHTML = priceListHtmal;
+            console.log(gange[ganNrTodisplay][0]["typ"])
+
+            updateTitel(gange[ganNrTodisplay][0]["typ"]);
+
+
+
+        } else {
+            numberDisplayedString = "";
+            updateNumberView();
+            updateTitel("finished");
+        }
+
+
+    }
+
+
+    function createGagPriceHtmlString(price) {
+
+        return "<div class='price' id=price" + price.preisNr + ">" +
+            price.preisNr + ". " + price.text +
+            "</div>"
+
+    }
+
+
+
+    function updateNumberView() {
+        var numberside = document.getElementById("numberSide");
+        numberside.innerHTML = ''
+
+        numberside.innerHTML = numberDisplayedString;
+
+    }
+
+
+
+    updateNumberView();
+
+    document.onkeypress = function (evt) {
+        evt = evt || window.event;
+        var charCode = evt.keyCode || evt.which;
+        var charStr = String.fromCharCode(charCode);
+
+
+        if (charCode == 13) { //enter
+            gangNr++
+              numberDisplayedString = "00";
+            updateNumberView();
+            displayGang(gangNr);
+          
+
+        } else {//not enter
+            if (isNumeric(charStr)) {
+                updateNummber(charStr);
+            }
+        }
+
+        function isNumeric(str) {
+            if (typeof str != "string") return false // we only process strings!  
+            return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+                !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+        }
+
+        function updateNummber(newNumber) {
+            numberDisplayedString += newNumber;
+            if (numberDisplayedString.charAt(0) !== "0") {
+
+
+
+                numberDisplayedString = "0" + newNumber;
+
+            } else {
+                numberDisplayedString = numberDisplayedString.slice(1);
+
+
+
+            }
+
+
+            updateNumberView();
+        }
+
+
+    };
+
+
+</script>
+
+</html>
